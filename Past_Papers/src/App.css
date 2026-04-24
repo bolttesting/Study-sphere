@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #050816;
+  --bg-soft: #0f172a;
+  --panel: #121a31;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --brand: #60a5fa;
+  --brand-strong: #3b82f6;
+  --accent: #22d3ee;
+  --danger: #f87171;
+}
+
+.App {
+  min-height: 100vh;
+  text-align: left;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.12), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(99, 102, 241, 0.16), transparent 40%),
+    var(--bg);
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+h1 { font-size: clamp(2rem, 2.8vw, 2.8rem); }
+h2 { font-size: clamp(1.55rem, 2.1vw, 2.15rem); }
+h3 { font-size: clamp(1.2rem, 1.5vw, 1.45rem); }
+
+* {
+  box-sizing: border-box;
+}
+
+/* Global premium dropdown/select style */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: 10px 40px 10px 12px;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+select:hover {
+  border-color: #93c5fd;
+  background-color: #f8fbff;
+}
+
+select:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+/* Global premium file-input style (for visible native file fields) */
+input[type="file"] {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  padding: 6px;
+}
+
+input[type="file"]::file-selector-button {
+  border: 0;
+  border-right: 1px solid #dbeafe;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1e3a8a;
+  font-weight: 600;
+  padding: 8px 12px;
+  margin-right: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}

@@ -1,0 +1,351 @@
+.std-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(59, 130, 246, 0.1), transparent 30%),
+    radial-gradient(circle at 90% 0%, rgba(139, 92, 246, 0.09), transparent 35%),
+    #f7f9fc;
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+}
+
+.std-sidebar {
+  background: rgba(255, 255, 255, 0.88);
+  border-right: 1px solid #dbeafe;
+  backdrop-filter: blur(14px);
+  padding: 18px 14px;
+}
+
+.std-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.std-brand-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+.std-brand strong {
+  display: block;
+  font-size: 14px;
+}
+
+.std-brand small {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.std-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.std-nav-item {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.std-nav-item span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.std-nav-item:hover {
+  background: #f8fafc;
+}
+
+.std-nav-item.active {
+  background: linear-gradient(135deg, #eff6ff, #eef2ff);
+  color: #1e3a8a;
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
+}
+
+.std-main {
+  padding: 18px 20px 24px;
+}
+
+.std-topbar {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(12px);
+}
+
+.std-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.std-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+}
+
+.std-topbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.std-top-btn {
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.std-top-btn:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.std-content {
+  margin-top: 14px;
+}
+
+.std-content-head h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.std-content-head p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.std-stats {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.std-stat {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.std-stat small {
+  color: #64748b;
+  font-size: 11px;
+  display: block;
+}
+
+.std-stat strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.std-quick {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.std-quick-btn {
+  text-decoration: none;
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #334155;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.std-quick-btn:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.16);
+}
+
+.std-panel {
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 18px;
+  backdrop-filter: blur(10px);
+}
+
+.std-panel h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.std-panel p {
+  margin: 8px 0 16px;
+  color: #64748b;
+}
+
+.std-embedded {
+  margin-top: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  height: calc(100vh - 145px);
+  min-height: 620px;
+}
+
+.std-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+
+.std-modal {
+  width: min(460px, 92vw);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.std-modal h3 {
+  margin: 0 0 12px;
+}
+
+.std-form {
+  display: grid;
+  gap: 8px;
+}
+
+.std-form label {
+  font-size: 12px;
+  color: #475569;
+}
+
+.std-form input,
+.std-form select {
+  border: 1px solid #dbe1ea;
+  border-radius: 9px;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.std-form input:focus,
+.std-form select:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+.std-msg {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.std-msg.ok { color: #15803d; }
+.std-msg.error { color: #b91c1c; }
+
+.std-form-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.std-btn-ghost,
+.std-btn-solid {
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.std-btn-ghost {
+  border: 1px solid #dbe1ea;
+  background: #fff;
+}
+
+.std-btn-solid {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+}
+
+@media (max-width: 1150px) {
+  .std-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .std-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .std-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .std-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .std-quick,
+  .std-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .std-topbar {
+    flex-direction: column;
+    gap: 9px;
+    align-items: stretch;
+  }
+
+  .std-stats,
+  .std-quick,
+  .std-nav {
+    grid-template-columns: 1fr;
+  }
+}
