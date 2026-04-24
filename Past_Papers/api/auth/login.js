@@ -5,7 +5,8 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' });
 
   try {
-    const { email, password } = req.body || {};
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const { email, password } = body;
     if (!email || !password) return sendJson(res, 400, { error: 'Email and password required' });
 
     const { data, error } = await supabasePublic.auth.signInWithPassword({ email, password });
@@ -29,6 +30,7 @@ module.exports = async function handler(req, res) {
       },
     });
   } catch (e) {
-    return sendJson(res, 500, { error: 'Internal server error' });
+    console.error('login handler error:', e);
+    return sendJson(res, 500, { error: e?.message || 'Internal server error' });
   }
 };
