@@ -726,6 +726,7 @@ module.exports = async function handler(req, res) {
 
       let contextBlock = '';
       let allSelectedNotesUnreadable = false;
+      let readableNotesCount = 0;
       if (mode === 'RAG' && selected_note_ids.length) {
         let notesQuery = supabaseAdmin
           .from('notes')
@@ -737,7 +738,6 @@ module.exports = async function handler(req, res) {
         const { data: notes } = await notesQuery;
 
         const noteSummaries = [];
-        let readableNotesCount = 0;
         for (const note of notes || []) {
           const extractedText = await extractPdfTextFromStorage(supabaseAdmin, 'notes', note.file_path);
           const snippet = extractedText.slice(0, 3500);
@@ -763,8 +763,27 @@ module.exports = async function handler(req, res) {
         reply = 'I could not confidently answer that right now. You can submit this query for admin review.';
         unanswered = true;
       }
+
+      // If we have readable note text, do not allow false "unreadable/image-only" outcomes.
+      if (mode === 'RAG' && readableNotesCount > 0 && looksLikeNoAnswer(reply)) {
+        const strictPrompt = [
+          contextBlock,
+          '',
+          `Student question:\n${message}`,
+          '',
+          'You have readable text from the selected note. Do NOT claim the note is image-only/unreadable.',
+          'Answer using only the extracted note content and keep it concise and study-friendly.',
+        ].join('\n');
+        const retry = await askGroq(strictPrompt);
+        if (retry && !looksLikeNoAnswer(retry)) {
+          reply = retry;
+        }
+      }
+
       if (looksLikeNoAnswer(reply)) {
         unanswered = true;
+      } else if (mode === 'RAG' && readableNotesCount > 0) {
+        unanswered = false;
       }
       await supabaseAdmin.from('chat_messages').insert({ session_id: session.id, role: 'assistant', content: reply });
       await supabaseAdmin.from('chat_sessions').update({ updated_at: new Date().toISOString() }).eq('id', session.id);
