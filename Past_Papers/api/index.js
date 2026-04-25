@@ -193,6 +193,16 @@ function extractPdfTextHeuristic(buffer) {
     .trim();
 }
 
+function summarizeExtractedText(text, maxChars = 650) {
+  const cleaned = (text || '').replace(/\s+/g, ' ').trim();
+  if (!cleaned) return '';
+  if (cleaned.length <= maxChars) return cleaned;
+  const sliced = cleaned.slice(0, maxChars);
+  const lastSentence = Math.max(sliced.lastIndexOf('. '), sliced.lastIndexOf('? '), sliced.lastIndexOf('! '));
+  if (lastSentence > 180) return sliced.slice(0, lastSentence + 1).trim();
+  return `${sliced.trim()}...`;
+}
+
 async function readUploadedFile(file) {
   const sourcePath = file?.filepath || file?.path;
   if (!sourcePath) throw new Error('Uploaded file path is missing.');
@@ -795,6 +805,7 @@ module.exports = async function handler(req, res) {
       let contextBlock = '';
       let allSelectedNotesUnreadable = false;
       let readableNotesCount = 0;
+      let firstReadableSnippet = '';
       if (mode === 'RAG' && selected_note_ids.length) {
         let notesQuery = supabaseAdmin
           .from('notes')
@@ -810,6 +821,7 @@ module.exports = async function handler(req, res) {
           const extractedText = await extractPdfTextFromStorage(supabaseAdmin, 'notes', note.file_path);
           const snippet = extractedText.slice(0, 3500);
           if (snippet.trim()) readableNotesCount += 1;
+          if (!firstReadableSnippet && snippet.trim()) firstReadableSnippet = snippet.trim();
           noteSummaries.push(
             `--- Note: ${note.title} (${note.subject}, ${note.class_name}) ---\n` +
             (snippet || '[No readable text extracted. This file may be image-only/scanned.]')
@@ -845,6 +857,16 @@ module.exports = async function handler(req, res) {
         const retry = await askGroq(strictPrompt);
         if (retry && !looksLikeNoAnswer(retry)) {
           reply = retry;
+        }
+      }
+
+      // Deterministic guardrail: never return unreadable/image-only if readable text exists.
+      if (mode === 'RAG' && readableNotesCount > 0 && looksLikeNoAnswer(reply)) {
+        const summary = summarizeExtractedText(firstReadableSnippet);
+        if (summary) {
+          reply = `I can read the selected note. Based on the document, here is a concise summary:\n\n${summary}\n\nIf you want, ask a specific question (for example: definition, key points, short question, long question, or MCQs) and I will answer from this note.`;
+        } else {
+          reply = 'I can access the selected note, but I could not produce a confident direct answer to that exact question. Please ask a more specific question from the selected document.';
         }
       }
 
