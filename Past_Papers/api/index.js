@@ -203,6 +203,23 @@ function summarizeExtractedText(text, maxChars = 650) {
   return `${sliced.trim()}...`;
 }
 
+function isGenericDocumentSummaryRequest(message) {
+  const q = (message || '').toLowerCase().trim();
+  if (!q) return false;
+  const patterns = [
+    'explain this document',
+    'explain from this document',
+    'summary of this document',
+    'summarize this document',
+    'summarise this document',
+    '5-point summary',
+    '5 point summary',
+    'give me summary',
+    'what is this document about',
+  ];
+  return patterns.some((p) => q.includes(p));
+}
+
 async function readUploadedFile(file) {
   const sourcePath = file?.filepath || file?.path;
   if (!sourcePath) throw new Error('Uploaded file path is missing.');
@@ -820,6 +837,7 @@ module.exports = async function handler(req, res) {
       let allSelectedNotesUnreadable = false;
       let readableNotesCount = 0;
       let firstReadableSnippet = '';
+      let selectedNoteTitles = [];
       if (mode === 'RAG' && selected_note_ids.length) {
         let notesQuery = supabaseAdmin
           .from('notes')
@@ -829,6 +847,7 @@ module.exports = async function handler(req, res) {
           notesQuery = notesQuery.eq('class_name', auth.profile.class_name);
         }
         const { data: notes } = await notesQuery;
+        selectedNoteTitles = (notes || []).map((n) => n.title).filter(Boolean);
 
         const noteSummaries = [];
         for (const note of notes || []) {
@@ -850,8 +869,25 @@ module.exports = async function handler(req, res) {
           `Extracted note content:\n${noteSummaries.join('\n\n')}`,
         ].join('\n\n');
       }
+      if (mode === 'RAG' && selected_note_ids.length === 0) {
+        const reply = 'Please select one note in RAG mode before asking a question.';
+        await supabaseAdmin.from('chat_messages').insert({ session_id: session.id, role: 'assistant', content: reply });
+        await supabaseAdmin.from('chat_sessions').update({ updated_at: new Date().toISOString() }).eq('id', session.id);
+        return sendJson(res, 200, { session_id: session.id, reply, sources: [], unanswered: false });
+      }
+
       const prompt = `${contextBlock}\n\nStudent question:\n${message}\n\nAnswer in a concise study-friendly way.`;
-      let reply = await askGroq(prompt);
+      let reply = null;
+      if (mode === 'RAG' && readableNotesCount > 0 && isGenericDocumentSummaryRequest(message)) {
+        const summary = summarizeExtractedText(firstReadableSnippet);
+        if (summary) {
+          const noteName = selectedNoteTitles[0] ? ` "${selectedNoteTitles[0]}"` : '';
+          reply = `Here is a concise summary from the selected note${noteName}:\n\n${summary}\n\nIf you want, I can also provide this as:\n- 5 bullet key points\n- simple explanation for class 9\n- MCQs with answers`;
+        }
+      }
+      if (!reply) {
+        reply = await askGroq(prompt);
+      }
       let unanswered = allSelectedNotesUnreadable;
       if (!reply) {
         reply = 'I could not confidently answer that right now. You can submit this query for admin review.';
