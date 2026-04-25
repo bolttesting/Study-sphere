@@ -179,8 +179,25 @@ async function extractPdfTextFromStorage(supabaseAdmin, bucket, filePath) {
     if (!pdfParse) return '';
     const arrayBuffer = await data.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const parsed = await pdfParse(buffer);
-    return (parsed?.text || '').replace(/\s+\n/g, '\n').trim();
+    let parsedText = '';
+
+    // Support both legacy pdf-parse function API and v2 class API.
+    if (typeof pdfParse === 'function') {
+      const parsed = await pdfParse(buffer);
+      parsedText = parsed?.text || '';
+    } else if (typeof pdfParse?.PDFParse === 'function') {
+      const parser = new pdfParse.PDFParse({ data: buffer });
+      try {
+        const parsed = await parser.getText();
+        parsedText = parsed?.text || '';
+      } finally {
+        if (typeof parser.destroy === 'function') {
+          await parser.destroy();
+        }
+      }
+    }
+
+    return parsedText.replace(/\s+\n/g, '\n').trim();
   } catch (_) {
     return '';
   }
