@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const zlib = require('zlib');
 const formidableLib = require('formidable');
 const { createClient } = require('@supabase/supabase-js');
 const { PDFDocument, StandardFonts } = require('pdf-lib');
@@ -161,36 +162,66 @@ function decodePdfLiteralString(literal) {
 }
 
 function extractPdfTextHeuristic(buffer) {
-  // Best-effort fallback: parse PDF text show operators when parser fails.
+  // Best-effort fallback: parse text operators from raw + flate-decoded streams.
   const raw = buffer.toString('latin1');
-  const chunks = [];
+  const candidateContents = [raw];
 
+  // Try to inflate compressed streams that commonly hold page text operators.
+  const streamToken = 'stream';
+  const endStreamToken = 'endstream';
+  let cursor = 0;
+  while (cursor < raw.length) {
+    const sIdx = raw.indexOf(streamToken, cursor);
+    if (sIdx === -1) break;
+    const eIdx = raw.indexOf(endStreamToken, sIdx + streamToken.length);
+    if (eIdx === -1) break;
+
+    let dataStart = sIdx + streamToken.length;
+    if (raw[dataStart] === '\r' && raw[dataStart + 1] === '\n') dataStart += 2;
+    else if (raw[dataStart] === '\n') dataStart += 1;
+    else if (raw[dataStart] === '\r') dataStart += 1;
+
+    const dataEnd = eIdx > dataStart ? eIdx : dataStart;
+    const compressedSlice = buffer.subarray(dataStart, dataEnd);
+    if (compressedSlice.length > 8) {
+      try {
+        const inflated = zlib.inflateSync(compressedSlice);
+        if (inflated?.length) {
+          candidateContents.push(inflated.toString('latin1'));
+        }
+      } catch (_) {
+        // Non-deflate stream or invalid slice; ignore and continue.
+      }
+    }
+    cursor = eIdx + endStreamToken.length;
+  }
+
+  const chunks = [];
   const tjRegex = /\((?:\\.|[^\\)])*\)\s*Tj/g;
   const tjArrayRegex = /\[(.*?)\]\s*TJ/gs;
 
-  const tjMatches = raw.match(tjRegex) || [];
-  for (const match of tjMatches) {
-    const start = match.indexOf('(');
-    const end = match.lastIndexOf(')');
-    if (start >= 0 && end > start) {
-      chunks.push(decodePdfLiteralString(match.slice(start + 1, end)));
+  for (const content of candidateContents) {
+    const tjMatches = content.match(tjRegex) || [];
+    for (const match of tjMatches) {
+      const start = match.indexOf('(');
+      const end = match.lastIndexOf(')');
+      if (start >= 0 && end > start) {
+        chunks.push(decodePdfLiteralString(match.slice(start + 1, end)));
+      }
+    }
+
+    let m;
+    while ((m = tjArrayRegex.exec(content)) !== null) {
+      const arr = m[1] || '';
+      const litRegex = /\((?:\\.|[^\\)])*\)/g;
+      const literals = arr.match(litRegex) || [];
+      for (const lit of literals) {
+        chunks.push(decodePdfLiteralString(lit.slice(1, -1)));
+      }
     }
   }
 
-  let m;
-  while ((m = tjArrayRegex.exec(raw)) !== null) {
-    const arr = m[1] || '';
-    const litRegex = /\((?:\\.|[^\\)])*\)/g;
-    const literals = arr.match(litRegex) || [];
-    for (const lit of literals) {
-      chunks.push(decodePdfLiteralString(lit.slice(1, -1)));
-    }
-  }
-
-  return chunks
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return chunks.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 function summarizeExtractedText(text, maxChars = 650) {
@@ -869,6 +900,14 @@ module.exports = async function handler(req, res) {
           `Extracted note content:\n${noteSummaries.join('\n\n')}`,
         ].join('\n\n');
       }
+
+      if (mode === 'RAG' && selected_note_ids.length > 0 && readableNotesCount === 0) {
+        const reply = 'I found your selected note, but could not read text from it at runtime. Please re-upload this document as a standard text PDF (not print/scan mode), then try again.';
+        await supabaseAdmin.from('chat_messages').insert({ session_id: session.id, role: 'assistant', content: reply });
+        await supabaseAdmin.from('chat_sessions').update({ updated_at: new Date().toISOString() }).eq('id', session.id);
+        return sendJson(res, 200, { session_id: session.id, reply, sources: [], unanswered: true });
+      }
+
       if (mode === 'RAG' && selected_note_ids.length === 0) {
         const reply = 'Please select one note in RAG mode before asking a question.';
         await supabaseAdmin.from('chat_messages').insert({ session_id: session.id, role: 'assistant', content: reply });
