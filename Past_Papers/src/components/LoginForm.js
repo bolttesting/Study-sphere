@@ -101,11 +101,13 @@ const LoginForm = () => {
 
           <form onSubmit={handleSubmit} className="auth-modern-form">
             <div className="field-wrap">
-              <label>Email Address</label>
+              <label htmlFor="login-email">Email Address</label>
               <div className="glass-field">
                 <input
+                  id="login-email"
                   type="email"
                   name="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email address"
@@ -115,16 +117,23 @@ const LoginForm = () => {
             </div>
 
             <div className="field-wrap">
-              <label>Password</label>
+              <label htmlFor="login-password">Password</label>
               <div className="glass-field has-icon">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
                 />
-                <button type="button" className="icon-btn" onClick={() => setShowPassword((p) => !p)}>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((p) => !p)}
+                >
                   <EyeIcon closed={showPassword} />
                 </button>
               </div>
@@ -133,7 +142,12 @@ const LoginForm = () => {
 
             <div className="auth-row">
               <label className="remember-wrap">
-                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  autoComplete="off"
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
                 <span>Keep me signed in</span>
               </label>
               <button type="button" className="link-btn">Reset password</button>

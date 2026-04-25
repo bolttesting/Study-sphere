@@ -130,25 +130,39 @@ const SignupForm = () => {
           <form onSubmit={handleSubmit} className="auth-modern-form">
             <div className="split-fields">
               <div className="field-wrap">
-                <label>First Name</label>
+                <label htmlFor="signup-first-name">First Name</label>
                 <div className="glass-field">
-                  <input name="firstName" value={formData.firstName} onChange={handleChange} placeholder="John" />
+                  <input
+                    id="signup-first-name"
+                    name="firstName"
+                    autoComplete="given-name"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="John"
+                  />
                 </div>
                 {errors.firstName && <span className="error-message">{errors.firstName}</span>}
               </div>
               <div className="field-wrap">
-                <label>Last Name</label>
+                <label htmlFor="signup-last-name">Last Name</label>
                 <div className="glass-field">
-                  <input name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Doe" />
+                  <input
+                    id="signup-last-name"
+                    name="lastName"
+                    autoComplete="family-name"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="Doe"
+                  />
                 </div>
                 {errors.lastName && <span className="error-message">{errors.lastName}</span>}
               </div>
             </div>
 
             <div className="field-wrap">
-              <label>Role</label>
+              <label htmlFor="signup-role">Role</label>
               <div className="glass-field">
-                <select name="role" value={formData.role} onChange={handleChange}>
+                <select id="signup-role" name="role" autoComplete="off" value={formData.role} onChange={handleChange}>
                   <option value="">Select role</option>
                   <option value="Student">Student</option>
                   <option value="Admin">Admin</option>
@@ -159,9 +173,9 @@ const SignupForm = () => {
 
             {formData.role === 'Student' && (
               <div className="field-wrap">
-                <label>Class</label>
+                <label htmlFor="signup-class">Class</label>
                 <div className="glass-field">
-                  <select name="class" value={formData.class} onChange={handleChange}>
+                  <select id="signup-class" name="class" autoComplete="off" value={formData.class} onChange={handleChange}>
                     <option value="">Select class</option>
                     <option value="9th">9th</option>
                     <option value="10th">10th</option>
@@ -172,25 +186,40 @@ const SignupForm = () => {
             )}
 
             <div className="field-wrap">
-              <label>Email Address</label>
+              <label htmlFor="signup-email">Email Address</label>
               <div className="glass-field">
-                <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" />
+                <input
+                  id="signup-email"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                />
               </div>
               {errors.email && <span className="error-message">{errors.email}</span>}
             </div>
 
             <div className="split-fields">
               <div className="field-wrap">
-                <label>Password</label>
+                <label htmlFor="signup-password">Password</label>
                 <div className="glass-field has-icon">
                   <input
+                    id="signup-password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Enter password"
                   />
-                  <button type="button" className="icon-btn" onClick={() => setShowPassword((p) => !p)}>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((p) => !p)}
+                  >
                     <EyeIcon closed={showPassword} />
                   </button>
                 </div>
@@ -198,16 +227,23 @@ const SignupForm = () => {
               </div>
 
               <div className="field-wrap">
-                <label>Confirm Password</label>
+                <label htmlFor="signup-confirm-password">Confirm Password</label>
                 <div className="glass-field has-icon">
                   <input
+                    id="signup-confirm-password"
                     type={showConfirm ? 'text' : 'password'}
                     name="confirmPassword"
+                    autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Confirm password"
                   />
-                  <button type="button" className="icon-btn" onClick={() => setShowConfirm((p) => !p)}>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
+                    onClick={() => setShowConfirm((p) => !p)}
+                  >
                     <EyeIcon closed={showConfirm} />
                   </button>
                 </div>
