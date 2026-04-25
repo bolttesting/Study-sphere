@@ -1023,6 +1023,19 @@
   .pricing-grid {
     grid-template-columns: 1fr;
   }
+
+  .hero-header {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+  }
+
+  .hero-nav {
+    width: 100%;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 }
 
 /* Premium animated override layer */
@@ -1340,6 +1353,56 @@
   }
 
   .section-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-financial {
+    padding: 0.7rem;
+  }
+
+  .hero-content {
+    padding: 2.3rem 0.3rem 1rem;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(1.65rem, 9.5vw, 2.4rem);
+  }
+
+  .hero-content-actions,
+  .landing-hero-actions,
+  .contact-actions {
+    width: 100%;
+  }
+
+  .hero-btn-primary,
+  .hero-btn-secondary,
+  .landing-btn,
+  .contact-actions a {
+    width: 100%;
+    text-align: center;
+  }
+
+  .landing-page {
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  .landing-nav {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .landing-nav-actions {
+    width: 100%;
+  }
+
+  .landing-nav-actions .landing-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .landing-stats {
     grid-template-columns: 1fr;
   }
 }

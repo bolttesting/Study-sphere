@@ -469,6 +469,18 @@ body {
     width: 100%;
     justify-content: center;
   }
+
+  .video-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .video-card-title {
+    font-size: 0.84rem;
+  }
+
+  .video-page-wrapper {
+    padding: 0.6rem !important;
+  }
 }
 /* Welcome block above cards */
 .video-welcome-block {

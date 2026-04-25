@@ -1213,6 +1213,10 @@ select option:checked {
 }
 
 .admin-main { min-width: 0; }
+.admin-mobile-menu-btn,
+.admin-sidebar-overlay {
+  display: none;
+}
 
 @media (max-width: 900px) {
   .admin-shell {
@@ -1220,6 +1224,75 @@ select option:checked {
     padding: 0 8px;
   }
   .admin-sidebar {
-    position: static;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(84vw, 300px);
+    transform: translateX(-110%);
+    transition: transform 0.2s ease;
+    z-index: 40;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.24);
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+  .admin-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.35);
+    z-index: 35;
+  }
+  .admin-mobile-menu-btn {
+    display: inline-flex;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #334155;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .dashboard-header {
+    gap: 0.7rem;
+  }
+  .dashboard-header h1 {
+    font-size: 1.35rem;
+  }
+  .profile-wrapper {
+    width: 100%;
+  }
+  .profile-button {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-container {
+    padding: 0.8rem;
+  }
+  .module-table-wrapper {
+    overflow-x: auto;
+  }
+  .module-table {
+    min-width: 820px;
+  }
+  .module-filters {
+    flex-direction: column;
+  }
+  .filter-input,
+  .module-filters .primary-btn {
+    width: 100%;
+  }
+  .table-actions {
+    flex-wrap: wrap;
+  }
+  .modal-buttons {
+    flex-direction: column;
+  }
+  .modal-buttons .primary-btn,
+  .modal-buttons .secondary-btn {
+    width: 100%;
   }
 }

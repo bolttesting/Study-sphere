@@ -24,6 +24,7 @@ const AdminDashboard = () => {
 
   // profile / ui state
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const currentUser = authStorage.getUser() || {};
   const [adminPreferredClass, setAdminPreferredClass] = useState(currentUser.class_name || '9th');
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
@@ -289,7 +290,7 @@ const AdminDashboard = () => {
       )}
 
       <div className="admin-shell">
-        <aside className="admin-sidebar">
+        <aside className={`admin-sidebar ${mobileNavOpen ? 'open' : ''}`}>
           <div className="admin-brand">
             <span className="admin-brand-icon">◉</span>
             <div>
@@ -303,7 +304,10 @@ const AdminDashboard = () => {
                 key={tab.id}
                 type="button"
                 className={`admin-nav-item ${activeModule === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveModule(tab.id)}
+                onClick={() => {
+                  setActiveModule(tab.id);
+                  setMobileNavOpen(false);
+                }}
               >
                 <span>{tab.icon}</span>
                 {tab.label}
@@ -312,11 +316,30 @@ const AdminDashboard = () => {
           </nav>
         </aside>
 
+        {mobileNavOpen && (
+          <button
+            type="button"
+            className="admin-sidebar-overlay"
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation"
+          />
+        )}
+
         <div className="admin-main">
       <div className="dashboard-container">
         {/* Header */}
         <div className="dashboard-header">
-          <h1>Admin Dashboard</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <button
+              type="button"
+              className="admin-mobile-menu-btn"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+            >
+              Menu
+            </button>
+            <h1>Admin Dashboard</h1>
+          </div>
 
           <div className="profile-wrapper">
             <button className="profile-button" onClick={() => setProfileOpen((o) => !o)}>

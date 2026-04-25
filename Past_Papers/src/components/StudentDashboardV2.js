@@ -12,6 +12,7 @@ const StudentDashboardV2 = () => {
   const storedUser = authStorage.getUser() || {};
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
@@ -73,7 +74,7 @@ const StudentDashboardV2 = () => {
 
   return (
     <div className="std-shell">
-      <aside className="std-sidebar">
+      <aside className={`std-sidebar ${mobileNavOpen ? 'open' : ''}`}>
         <div className="std-brand">
           <span className="std-brand-icon">◉</span>
           <div>
@@ -97,9 +98,26 @@ const StudentDashboardV2 = () => {
         </nav>
       </aside>
 
+      {mobileNavOpen && (
+        <button
+          type="button"
+          className="std-sidebar-overlay"
+          onClick={() => setMobileNavOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
       <section className="std-main">
         <header className="std-topbar">
           <div className="std-topbar-left">
+            <button
+              type="button"
+              className="std-mobile-menu-btn"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation"
+            >
+              Menu
+            </button>
             <span className="std-dot" />
             <strong>{user.name}</strong>
           </div>

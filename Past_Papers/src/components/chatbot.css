@@ -467,8 +467,26 @@
     padding: 0.75rem;
   }
 
+  .chatbot-container {
+    border-radius: 0.8rem;
+  }
+
   .chat-header {
     padding: 0.75rem 0.9rem;
+    gap: 0.6rem;
+  }
+
+  .chat-header-left {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chat-title {
+    font-size: 1rem;
+  }
+
+  .chat-subtitle {
+    font-size: 0.78rem;
   }
 
   .chat-messages {
@@ -476,20 +494,29 @@
   }
 
   .message-bubble {
-    max-width: 80%;
+    max-width: 92%;
   }
 
   .chat-input-area {
     padding: 0.6rem 0.75rem;
+    flex-wrap: wrap;
   }
 
   .chat-input {
     font-size: 0.85rem;
+    width: 100%;
+    border-radius: 0.75rem;
   }
 
   .chat-send-btn {
-    padding: 0.5rem 0.9rem;
+    width: 100%;
+    padding: 0.58rem 0.9rem;
     font-size: 0.8rem;
+  }
+
+  .session-item-top {
+    gap: 0.4rem;
+    flex-wrap: wrap;
   }
 }
 
