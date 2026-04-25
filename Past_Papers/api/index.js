@@ -2,9 +2,22 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const formidableLib = require('formidable');
-const pdfParse = require('pdf-parse');
 const { createClient } = require('@supabase/supabase-js');
 const { PDFDocument, StandardFonts } = require('pdf-lib');
+
+let cachedPdfParse = null;
+let pdfParseLoadAttempted = false;
+
+function getPdfParse() {
+  if (pdfParseLoadAttempted) return cachedPdfParse;
+  pdfParseLoadAttempted = true;
+  try {
+    cachedPdfParse = require('pdf-parse');
+  } catch (_) {
+    cachedPdfParse = null;
+  }
+  return cachedPdfParse;
+}
 
 function sendJson(res, status, payload) {
   res.status(status).setHeader('Content-Type', 'application/json');
@@ -162,6 +175,8 @@ async function extractPdfTextFromStorage(supabaseAdmin, bucket, filePath) {
   if (error || !data) return '';
 
   try {
+    const pdfParse = getPdfParse();
+    if (!pdfParse) return '';
     const arrayBuffer = await data.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const parsed = await pdfParse(buffer);
