@@ -260,13 +260,27 @@ async function extractPdfTextFromStorage(supabaseAdmin, bucket, filePath) {
       const parsed = await pdfParse(buffer);
       parsedText = parsed?.text || '';
     } else if (typeof pdfParse?.PDFParse === 'function') {
-      const parser = new pdfParse.PDFParse({ data: buffer });
-      try {
-        const parsed = await parser.getText();
-        parsedText = parsed?.text || '';
-      } finally {
-        if (typeof parser.destroy === 'function') {
-          await parser.destroy();
+      const parserInitVariants = [
+        { data: buffer },
+        buffer,
+      ];
+
+      for (const initValue of parserInitVariants) {
+        let parser = null;
+        try {
+          parser = new pdfParse.PDFParse(initValue);
+          if (typeof parser.load === 'function') {
+            await parser.load();
+          }
+          const parsed = await parser.getText();
+          parsedText = (parsed?.text || '').trim();
+          if (parsedText) break;
+        } catch (_) {
+          // try next parser initialization variant
+        } finally {
+          if (parser && typeof parser.destroy === 'function') {
+            await parser.destroy();
+          }
         }
       }
     }
