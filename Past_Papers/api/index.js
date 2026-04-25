@@ -215,6 +215,24 @@ async function askGroq(prompt) {
   return data?.choices?.[0]?.message?.content || null;
 }
 
+function looksLikeNoAnswer(text) {
+  const normalized = (text || '').toLowerCase();
+  if (!normalized) return true;
+  const markers = [
+    'image-only',
+    'scanned file',
+    'unreadable',
+    'no readable text extracted',
+    'i could not confidently answer',
+    "i don't have this answer",
+    'i do not have this answer',
+    'not enough information',
+    'cannot find',
+    'unable to answer',
+  ];
+  return markers.some((token) => normalized.includes(token));
+}
+
 module.exports = async function handler(req, res) {
   try {
     const { supabaseAdmin, supabasePublic } = getSupabaseClients();
@@ -690,33 +708,45 @@ module.exports = async function handler(req, res) {
       await supabaseAdmin.from('chat_messages').insert({ session_id: session.id, role: 'user', content: message });
 
       let contextBlock = '';
+      let allSelectedNotesUnreadable = false;
       if (mode === 'RAG' && selected_note_ids.length) {
-        const { data: notes } = await supabaseAdmin
+        let notesQuery = supabaseAdmin
           .from('notes')
           .select('id,title,subject,class_name,file_path')
           .in('id', selected_note_ids);
+        if (auth.profile?.role !== 'Admin' && auth.profile?.class_name) {
+          notesQuery = notesQuery.eq('class_name', auth.profile.class_name);
+        }
+        const { data: notes } = await notesQuery;
 
         const noteSummaries = [];
+        let readableNotesCount = 0;
         for (const note of notes || []) {
           const extractedText = await extractPdfTextFromStorage(supabaseAdmin, 'notes', note.file_path);
           const snippet = extractedText.slice(0, 3500);
+          if (snippet.trim()) readableNotesCount += 1;
           noteSummaries.push(
             `--- Note: ${note.title} (${note.subject}, ${note.class_name}) ---\n` +
             (snippet || '[No readable text extracted. This file may be image-only/scanned.]')
           );
         }
+        allSelectedNotesUnreadable = (notes || []).length > 0 && readableNotesCount === 0;
 
         contextBlock = [
-          'Use ONLY the provided note content when possible. If content is missing or unreadable, say that clearly.',
+          'Use ONLY the provided selected note content.',
+          'If the selected note has no readable text, explicitly mention that the file appears image-only/scanned.',
           `Selected notes metadata:\n${(notes || []).map((n) => `- ${n.title} (${n.subject}, ${n.class_name})`).join('\n')}`,
           `Extracted note content:\n${noteSummaries.join('\n\n')}`,
         ].join('\n\n');
       }
       const prompt = `${contextBlock}\n\nStudent question:\n${message}\n\nAnswer in a concise study-friendly way.`;
       let reply = await askGroq(prompt);
-      let unanswered = false;
+      let unanswered = allSelectedNotesUnreadable;
       if (!reply) {
         reply = 'I could not confidently answer that right now. You can submit this query for admin review.';
+        unanswered = true;
+      }
+      if (looksLikeNoAnswer(reply)) {
         unanswered = true;
       }
       await supabaseAdmin.from('chat_messages').insert({ session_id: session.id, role: 'assistant', content: reply });

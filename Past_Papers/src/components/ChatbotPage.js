@@ -27,7 +27,7 @@ const ChatbotPage = () => {
 
   // ── RAG ─────────────────────────────────────────────────────────────────────
   const [availableNotes, setAvailableNotes]   = useState([]);
-  const [selectedNoteIds, setSelectedNoteIds] = useState([]);
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [notesLoading, setNotesLoading]       = useState(false);
   const [needsEscalation, setNeedsEscalation] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState('');
@@ -104,7 +104,7 @@ const ChatbotPage = () => {
       { id: Date.now(), sender: 'bot', text: "Hi! I'm your study assistant. How can I help you today?" },
     ]);
     setInputValue('');
-    setSelectedNoteIds([]);
+    setSelectedNoteId(null);
   };
 
   // ── Delete a session ────────────────────────────────────────────────────────
@@ -120,9 +120,7 @@ const ChatbotPage = () => {
   };
 
   const toggleNoteSelection = (id) => {
-    setSelectedNoteIds((prev) =>
-      prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]
-    );
+    setSelectedNoteId((prev) => (prev === id ? null : id));
   };
 
   const addMessage = (msg) => {
@@ -134,7 +132,7 @@ const ChatbotPage = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
 
-    if (activeTab === TABS.RAG && selectedNoteIds.length === 0) {
+    if (activeTab === TABS.RAG && !selectedNoteId) {
       addMessage({
         id: Date.now(), sender: 'bot',
         text: 'Please select at least one note from the panel before asking in RAG mode.',
@@ -151,7 +149,7 @@ const ChatbotPage = () => {
       const payload = {
         message:           trimmed,
         mode:              activeTab,
-        selected_note_ids: activeTab === TABS.RAG ? selectedNoteIds : [],
+        selected_note_ids: activeTab === TABS.RAG && selectedNoteId ? [selectedNoteId] : [],
         session_id:        sessionId || null,
       };
 
@@ -337,8 +335,8 @@ const ChatbotPage = () => {
             <div className="rag-notes-panel">
               <p className="rag-notes-label">
                 Select notes to reference
-                {selectedNoteIds.length > 0 && (
-                  <span className="notes-selected-count">{selectedNoteIds.length} selected</span>
+                {selectedNoteId && (
+                  <span className="notes-selected-count">1 selected</span>
                 )}
               </p>
               {notesLoading ? (
@@ -348,8 +346,9 @@ const ChatbotPage = () => {
                   {availableNotes.map((note) => (
                     <label key={note.id} className="note-item">
                       <input
-                        type="checkbox"
-                        checked={selectedNoteIds.includes(note.id)}
+                        type="radio"
+                        name="selected-rag-note"
+                        checked={selectedNoteId === note.id}
                         onChange={() => toggleNoteSelection(note.id)}
                         className="note-item-check"
                       />
