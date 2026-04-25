@@ -176,6 +176,11 @@ const ChatbotPage = () => {
       if (data.unanswered) {
         setNeedsEscalation(true);
         setPendingQuestion(trimmed);
+        addMessage({
+          id: Date.now() + 3,
+          sender: 'bot',
+          text: "I don't have this answer right now. Please share your email below and submit this query. Admin will research it and email you the answer.",
+        });
       }
     } catch (e) {
       addMessage({
@@ -190,12 +195,23 @@ const ChatbotPage = () => {
 
   const handleEscalateQuery = async () => {
     if (!pendingQuestion) return;
-    try {
-      await queriesApi.submit({ question: pendingQuestion, student_email: notifyEmail });
+    const email = notifyEmail.trim();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isValidEmail) {
       addMessage({
         id: Date.now() + 2,
         sender: 'bot',
-        text: 'Your query has been forwarded to admin. You will be notified by email once answered.',
+        text: 'Please enter a valid email address so admin can send you the answer.',
+      });
+      return;
+    }
+
+    try {
+      await queriesApi.submit({ question: pendingQuestion, student_email: email });
+      addMessage({
+        id: Date.now() + 2,
+        sender: 'bot',
+        text: 'Your question is now in the admin queue. You will receive an email update within 30 minutes, InshaAllah.',
       });
       setNeedsEscalation(false);
       setPendingQuestion('');
@@ -378,11 +394,11 @@ const ChatbotPage = () => {
               <input
                 value={notifyEmail}
                 onChange={(e) => setNotifyEmail(e.target.value)}
-                placeholder="Email for admin response"
+                placeholder="Type your email for admin response"
                 style={{ flex: 1, background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 8, padding: '0.45rem 0.6rem' }}
               />
               <button className="chat-send-btn" onClick={handleEscalateQuery} style={{ width: 'auto', padding: '0 0.8rem' }}>
-                Submit Query
+                Send to Admin
               </button>
             </div>
           )}

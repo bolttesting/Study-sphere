@@ -1,7 +1,7 @@
 // src/components/PastPapersPage.js  ── STEP 2: Class-scoped papers
 import React, { useState, useEffect } from 'react';
 import './pastpapers.css';
-import { pastPapers as papersApi, paperGen } from '../services/api';
+import { pastPapers as papersApi, paperGen, openProtectedFile } from '../services/api';
 import { authStorage } from '../services/auth';
 
 const SUBJECTS = [
@@ -209,14 +209,20 @@ const PastPapersPage = () => {
                     </div>
                     <div className="paper-actions">
                       {paper.file && (
-                        <a
-                          href={paper.file}
-                          download
+                        <button
+                          type="button"
                           className="btn-outline"
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              await openProtectedFile(paper.file, `${paper.title || 'paper'}.pdf`);
+                            } catch (err) {
+                              console.error('Failed to open protected PDF:', err);
+                            }
+                          }}
                         >
-                          Download
-                        </a>
+                          View PDF
+                        </button>
                       )}
                       <button
                         className="btn-primary"

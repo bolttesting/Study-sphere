@@ -49,6 +49,28 @@ export const notes = {
   delete: (id) => request(`/notes/${id}`, { method: 'DELETE' }),
 };
 
+export async function openProtectedFile(fileUrl, suggestedName = 'document.pdf') {
+  const token = authStorage.getAccess();
+  const response = await fetch(fileUrl, {
+    method: 'GET',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(errText || 'Failed to load file.');
+  }
+
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const win = window.open(blobUrl, '_blank');
+  if (!win) {
+    window.URL.revokeObjectURL(blobUrl);
+    throw new Error('Popup was blocked. Please allow popups and try again.');
+  }
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
+}
+
 // ── Past Papers ────────────────────────────────────────────────────────────────
 export const pastPapers = {
   list: (params = {}) => {
@@ -108,4 +130,5 @@ export const queries = {
     return request(`/queries${qs ? '?' + qs : ''}`);
   },
   resolve: (id, data) => jsonRequest(`/queries/${id}/resolve`, 'PATCH', data),
+  crawl: (id) => jsonRequest(`/queries/${id}/crawl`, 'POST', {}),
 };

@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const formidable = require('formidable');
+const os = require('os');
+const formidableLib = require('formidable');
+const pdfParse = require('pdf-parse');
 const { createClient } = require('@supabase/supabase-js');
 const { PDFDocument, StandardFonts } = require('pdf-lib');
 
@@ -67,7 +69,22 @@ async function parseBody(req) {
 }
 
 function parseForm(req) {
-  const form = formidable({ multiples: false, keepExtensions: true });
+  const formFactory =
+    formidableLib.formidable ||
+    formidableLib.default ||
+    null;
+
+  const formOptions = {
+    multiples: false,
+    keepExtensions: true,
+    uploadDir: os.tmpdir(),
+    maxFileSize: 20 * 1024 * 1024,
+  };
+
+  const form = formFactory
+    ? formFactory(formOptions)
+    : new formidableLib.IncomingForm(formOptions);
+
   return new Promise((resolve, reject) => {
     form.parse(req, (err, fields, files) => {
       if (err) reject(err);
@@ -84,6 +101,61 @@ function getField(fields, key) {
 function getFile(files, key) {
   const v = files[key];
   return Array.isArray(v) ? v[0] : v;
+}
+
+async function readUploadedFile(file) {
+  const sourcePath = file?.filepath || file?.path;
+  if (!sourcePath) throw new Error('Uploaded file path is missing.');
+  return fs.promises.readFile(sourcePath);
+}
+
+async function runQuickCrawler(question) {
+  const q = (question || '').trim();
+  if (!q) return '';
+
+  try {
+    const ddg = new URL('https://api.duckduckgo.com/');
+    ddg.searchParams.set('q', q);
+    ddg.searchParams.set('format', 'json');
+    ddg.searchParams.set('no_html', '1');
+    ddg.searchParams.set('no_redirect', '1');
+
+    const resp = await fetch(ddg.toString());
+    if (!resp.ok) return '';
+    const data = await resp.json();
+
+    const lines = [];
+    if (data.AbstractText) lines.push(data.AbstractText);
+    if (Array.isArray(data.RelatedTopics)) {
+      for (const item of data.RelatedTopics) {
+        if (item?.Text) lines.push(item.Text);
+        if (Array.isArray(item?.Topics)) {
+          for (const child of item.Topics) {
+            if (child?.Text) lines.push(child.Text);
+            if (lines.length >= 3) break;
+          }
+        }
+        if (lines.length >= 3) break;
+      }
+    }
+    return lines.slice(0, 3).join('\n');
+  } catch (_) {
+    return '';
+  }
+}
+
+async function extractPdfTextFromStorage(supabaseAdmin, bucket, filePath) {
+  const { data, error } = await supabaseAdmin.storage.from(bucket).download(filePath);
+  if (error || !data) return '';
+
+  try {
+    const arrayBuffer = await data.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const parsed = await pdfParse(buffer);
+    return (parsed?.text || '').replace(/\s+\n/g, '\n').trim();
+  } catch (_) {
+    return '';
+  }
 }
 
 async function askGroq(prompt) {
@@ -257,7 +329,7 @@ module.exports = async function handler(req, res) {
         if (!title || !subject || !class_name || !file) return sendJson(res, 400, { error: 'Missing required fields' });
         const ext = path.extname(file.originalFilename || '.pdf');
         const storagePath = `${auth.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-        const buffer = await fs.promises.readFile(file.filepath);
+        const buffer = await readUploadedFile(file);
         const { error: uploadErr } = await supabaseAdmin.storage.from('notes').upload(storagePath, buffer, {
           contentType: file.mimetype || 'application/pdf',
           upsert: false,
@@ -329,7 +401,7 @@ module.exports = async function handler(req, res) {
           if (file) {
             const ext = path.extname(file.originalFilename || '.pdf');
             file_path = `${auth.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-            const buffer = await fs.promises.readFile(file.filepath);
+            const buffer = await readUploadedFile(file);
             const { error: uploadErr } = await supabaseAdmin.storage.from('notes').upload(file_path, buffer, {
               contentType: file.mimetype || 'application/pdf',
               upsert: false,
@@ -374,7 +446,7 @@ module.exports = async function handler(req, res) {
         if (!title || !subject || !class_name || !year || !file) return sendJson(res, 400, { error: 'Missing required fields' });
         const ext = path.extname(file.originalFilename || '.pdf');
         const storagePath = `${auth.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-        const buffer = await fs.promises.readFile(file.filepath);
+        const buffer = await readUploadedFile(file);
         const { error: uploadErr } = await supabaseAdmin.storage.from('past-papers').upload(storagePath, buffer, {
           contentType: file.mimetype || 'application/pdf',
           upsert: false,
@@ -451,7 +523,7 @@ module.exports = async function handler(req, res) {
           if (file) {
             const ext = path.extname(file.originalFilename || '.pdf');
             file_path = `${auth.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-            const buffer = await fs.promises.readFile(file.filepath);
+            const buffer = await readUploadedFile(file);
             const { error: uploadErr } = await supabaseAdmin.storage.from('past-papers').upload(file_path, buffer, {
               contentType: file.mimetype || 'application/pdf',
               upsert: false,
@@ -591,8 +663,26 @@ module.exports = async function handler(req, res) {
 
       let contextBlock = '';
       if (mode === 'RAG' && selected_note_ids.length) {
-        const { data: notes } = await supabaseAdmin.from('notes').select('title,subject,class_name').in('id', selected_note_ids);
-        contextBlock = `Selected notes:\n${(notes || []).map((n) => `- ${n.title} (${n.subject}, ${n.class_name})`).join('\n')}`;
+        const { data: notes } = await supabaseAdmin
+          .from('notes')
+          .select('id,title,subject,class_name,file_path')
+          .in('id', selected_note_ids);
+
+        const noteSummaries = [];
+        for (const note of notes || []) {
+          const extractedText = await extractPdfTextFromStorage(supabaseAdmin, 'notes', note.file_path);
+          const snippet = extractedText.slice(0, 3500);
+          noteSummaries.push(
+            `--- Note: ${note.title} (${note.subject}, ${note.class_name}) ---\n` +
+            (snippet || '[No readable text extracted. This file may be image-only/scanned.]')
+          );
+        }
+
+        contextBlock = [
+          'Use ONLY the provided note content when possible. If content is missing or unreadable, say that clearly.',
+          `Selected notes metadata:\n${(notes || []).map((n) => `- ${n.title} (${n.subject}, ${n.class_name})`).join('\n')}`,
+          `Extracted note content:\n${noteSummaries.join('\n\n')}`,
+        ].join('\n\n');
       }
       const prompt = `${contextBlock}\n\nStudent question:\n${message}\n\nAnswer in a concise study-friendly way.`;
       let reply = await askGroq(prompt);
@@ -675,6 +765,36 @@ module.exports = async function handler(req, res) {
           .select('*')
           .single();
         if (error || !data) return sendJson(res, 404, { error: error?.message || 'Query not found' });
+        return sendJson(res, 200, { ...data, student: data.student_id });
+      }
+
+      if (parts.length === 3 && parts[2] === 'crawl' && req.method === 'POST') {
+        const auth = await getAuthContext(req, res, supabaseAdmin, supabasePublic, true);
+        if (!auth) return;
+
+        const queryId = parts[1];
+        const { data: existing, error: existingError } = await supabaseAdmin
+          .from('student_queries')
+          .select('*')
+          .eq('id', queryId)
+          .single();
+
+        if (existingError || !existing) {
+          return sendJson(res, 404, { error: existingError?.message || 'Query not found' });
+        }
+
+        const spiderResult = await runQuickCrawler(existing.question);
+        const { data, error } = await supabaseAdmin
+          .from('student_queries')
+          .update({
+            spider_result: spiderResult || 'Crawler could not find a clear match.',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', queryId)
+          .select('*')
+          .single();
+
+        if (error || !data) return sendJson(res, 400, { error: error?.message || 'Crawler update failed' });
         return sendJson(res, 200, { ...data, student: data.student_id });
       }
 
@@ -772,7 +892,7 @@ module.exports = async function handler(req, res) {
       const auth = await getAuthContext(req, res, supabaseAdmin, supabasePublic, false);
       if (!auth) return;
       const bucket = parts[1];
-      const filePath = parts.slice(2).join('/');
+      const filePath = decodeURIComponent(parts.slice(2).join('/'));
       if (!bucket || !filePath) return sendJson(res, 400, { error: 'Missing file path' });
       const { data, error } = await supabaseAdmin.storage.from(bucket).download(filePath);
       if (error || !data) return sendJson(res, 404, { error: 'File not found' });

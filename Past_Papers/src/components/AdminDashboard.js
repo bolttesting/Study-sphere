@@ -1,7 +1,7 @@
 // src/components/AdminDashboard.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { notes as notesApi, pastPapers as papersApi, queries as queriesApi } from '../services/api';
+import { notes as notesApi, pastPapers as papersApi, queries as queriesApi, openProtectedFile } from '../services/api';
 import './admin.css';
 import { authStorage } from '../services/auth';
 import { auth as authApi } from '../services/api';
@@ -40,6 +40,7 @@ const AdminDashboard = () => {
   const [papersLoading, setPapersLoading] = useState(false);
   const [queriesList, setQueriesList] = useState([]);
   const [queriesLoading, setQueriesLoading] = useState(false);
+  const [queryCrawlLoading, setQueryCrawlLoading] = useState({});
   const [resolveAnswer, setResolveAnswer] = useState({});
 
   // filters
@@ -128,6 +129,19 @@ const AdminDashboard = () => {
       fetchQueries();
     } catch (e) {
       showToast('Resolve failed', 'error');
+    }
+  };
+
+  const handleRunCrawler = async (id) => {
+    setQueryCrawlLoading((prev) => ({ ...prev, [id]: true }));
+    try {
+      const updated = await queriesApi.crawl(id);
+      setQueriesList((prev) => prev.map((q) => (q.id === id ? { ...q, spider_result: updated.spider_result } : q)));
+      showToast('Crawler finished. You can now review/update the answer.');
+    } catch (e) {
+      showToast(e.message || 'Crawler failed', 'error');
+    } finally {
+      setQueryCrawlLoading((prev) => ({ ...prev, [id]: false }));
     }
   };
 
@@ -463,9 +477,19 @@ const AdminDashboard = () => {
                               <td>{note.title}</td>
                               <td>
                                 {note.file ? (
-                                  <a href={note.file} target="_blank" rel="noreferrer" className="file-link">
+                                  <button
+                                    type="button"
+                                    className="table-btn view"
+                                    onClick={async () => {
+                                      try {
+                                        await openProtectedFile(note.file, `${note.title || 'note'}.pdf`);
+                                      } catch (e) {
+                                        showToast(e.message || 'Unable to open PDF', 'error');
+                                      }
+                                    }}
+                                  >
                                     View PDF
-                                  </a>
+                                  </button>
                                 ) : '—'}
                               </td>
                               <td className="table-actions">
@@ -609,9 +633,19 @@ const AdminDashboard = () => {
                               <td>{paper.exam_type}</td>
                               <td>
                                 {paper.file ? (
-                                  <a href={paper.file} target="_blank" rel="noreferrer" className="file-link">
+                                  <button
+                                    type="button"
+                                    className="table-btn view"
+                                    onClick={async () => {
+                                      try {
+                                        await openProtectedFile(paper.file, `${paper.title || 'paper'}.pdf`);
+                                      } catch (e) {
+                                        showToast(e.message || 'Unable to open PDF', 'error');
+                                      }
+                                    }}
+                                  >
                                     View PDF
-                                  </a>
+                                  </button>
                                 ) : '—'}
                               </td>
                               <td className="table-actions">
@@ -647,7 +681,7 @@ const AdminDashboard = () => {
                 {queriesLoading ? <p className="loading-text">Loading…</p> : (
                   <table className="module-table">
                     <thead>
-                      <tr><th>Student</th><th>Class</th><th>Question</th><th>Response</th><th>Action</th></tr>
+                      <tr><th>Student</th><th>Class</th><th>Question</th><th>Crawler Result</th><th>Response</th><th>Action</th></tr>
                     </thead>
                     <tbody>
                       {queriesList.map((q) => (
@@ -655,6 +689,21 @@ const AdminDashboard = () => {
                           <td>{q.student_name}<br /><small>{q.student_email}</small></td>
                           <td>{q.class_name || '—'}</td>
                           <td>{q.question}</td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                              <div style={{ fontSize: '0.8rem', color: '#475569', whiteSpace: 'pre-wrap' }}>
+                                {q.spider_result || 'No crawler result yet.'}
+                              </div>
+                              <button
+                                type="button"
+                                className="table-btn view"
+                                onClick={() => handleRunCrawler(q.id)}
+                                disabled={!!queryCrawlLoading[q.id]}
+                              >
+                                {queryCrawlLoading[q.id] ? 'Running...' : 'Run Crawler'}
+                              </button>
+                            </div>
+                          </td>
                           <td>
                             <textarea
                               className="form-input"
@@ -672,7 +721,7 @@ const AdminDashboard = () => {
                         </tr>
                       ))}
                       {queriesList.length === 0 && (
-                        <tr><td colSpan="5" className="empty-row">No pending queries.</td></tr>
+                        <tr><td colSpan="6" className="empty-row">No pending queries.</td></tr>
                       )}
                     </tbody>
                   </table>
