@@ -129,6 +129,70 @@ function getFile(files, key) {
   return Array.isArray(v) ? v[0] : v;
 }
 
+function decodePdfLiteralString(literal) {
+  if (!literal) return '';
+  let out = '';
+  for (let i = 0; i < literal.length; i += 1) {
+    const ch = literal[i];
+    if (ch !== '\\') {
+      out += ch;
+      continue;
+    }
+    const next = literal[i + 1];
+    if (!next) break;
+    if (next === 'n') { out += '\n'; i += 1; continue; }
+    if (next === 'r') { out += '\r'; i += 1; continue; }
+    if (next === 't') { out += '\t'; i += 1; continue; }
+    if (next === 'b') { out += '\b'; i += 1; continue; }
+    if (next === 'f') { out += '\f'; i += 1; continue; }
+    if (next === '(' || next === ')' || next === '\\') { out += next; i += 1; continue; }
+    if (/[0-7]/.test(next)) {
+      let oct = next;
+      if (/[0-7]/.test(literal[i + 2] || '')) oct += literal[i + 2];
+      if (/[0-7]/.test(literal[i + 3] || '')) oct += literal[i + 3];
+      out += String.fromCharCode(parseInt(oct, 8));
+      i += oct.length;
+      continue;
+    }
+    out += next;
+    i += 1;
+  }
+  return out;
+}
+
+function extractPdfTextHeuristic(buffer) {
+  // Best-effort fallback: parse PDF text show operators when parser fails.
+  const raw = buffer.toString('latin1');
+  const chunks = [];
+
+  const tjRegex = /\((?:\\.|[^\\)])*\)\s*Tj/g;
+  const tjArrayRegex = /\[(.*?)\]\s*TJ/gs;
+
+  const tjMatches = raw.match(tjRegex) || [];
+  for (const match of tjMatches) {
+    const start = match.indexOf('(');
+    const end = match.lastIndexOf(')');
+    if (start >= 0 && end > start) {
+      chunks.push(decodePdfLiteralString(match.slice(start + 1, end)));
+    }
+  }
+
+  let m;
+  while ((m = tjArrayRegex.exec(raw)) !== null) {
+    const arr = m[1] || '';
+    const litRegex = /\((?:\\.|[^\\)])*\)/g;
+    const literals = arr.match(litRegex) || [];
+    for (const lit of literals) {
+      chunks.push(decodePdfLiteralString(lit.slice(1, -1)));
+    }
+  }
+
+  return chunks
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function readUploadedFile(file) {
   const sourcePath = file?.filepath || file?.path;
   if (!sourcePath) throw new Error('Uploaded file path is missing.');
@@ -197,7 +261,11 @@ async function extractPdfTextFromStorage(supabaseAdmin, bucket, filePath) {
       }
     }
 
-    return parsedText.replace(/\s+\n/g, '\n').trim();
+    const cleaned = parsedText.replace(/\s+\n/g, '\n').trim();
+    if (cleaned) return cleaned;
+
+    const heuristic = extractPdfTextHeuristic(buffer);
+    return heuristic;
   } catch (_) {
     return '';
   }
