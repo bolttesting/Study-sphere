@@ -1,7 +1,7 @@
 // src/components/PastPapersPage.js  ── STEP 2: Class-scoped papers
 import React, { useState, useEffect } from 'react';
 import './pastpapers.css';
-import { pastPapers as papersApi, paperGen, openProtectedFile } from '../services/api';
+import { pastPapers as papersApi, paperGen, openProtectedFile, downloadProtectedFile } from '../services/api';
 import { authStorage } from '../services/auth';
 
 const SUBJECTS = [
@@ -209,20 +209,36 @@ const PastPapersPage = () => {
                     </div>
                     <div className="paper-actions">
                       {paper.file && (
-                        <button
-                          type="button"
-                          className="btn-outline"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              await openProtectedFile(paper.file, `${paper.title || 'paper'}.pdf`);
-                            } catch (err) {
-                              console.error('Failed to open protected PDF:', err);
-                            }
-                          }}
-                        >
-                          View PDF
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="btn-outline"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await openProtectedFile(paper.file, `${paper.title || 'paper'}.pdf`);
+                              } catch (err) {
+                                console.error('Failed to open protected PDF:', err);
+                              }
+                            }}
+                          >
+                            View PDF
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-outline"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await downloadProtectedFile(paper.file, `${paper.title || 'paper'}.pdf`);
+                              } catch (err) {
+                                console.error('Failed to download protected PDF:', err);
+                              }
+                            }}
+                          >
+                            Download
+                          </button>
+                        </>
                       )}
                       <button
                         className="btn-primary"

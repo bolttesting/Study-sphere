@@ -71,6 +71,29 @@ export async function openProtectedFile(fileUrl, suggestedName = 'document.pdf')
   setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
 }
 
+export async function downloadProtectedFile(fileUrl, suggestedName = 'document.pdf') {
+  const token = authStorage.getAccess();
+  const response = await fetch(fileUrl, {
+    method: 'GET',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(errText || 'Failed to download file.');
+  }
+
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 30000);
+}
+
 // ── Past Papers ────────────────────────────────────────────────────────────────
 export const pastPapers = {
   list: (params = {}) => {
