@@ -1,0 +1,15 @@
+{
+  "installCommand": "cd Past_Papers && npm install",
+  "buildCommand": "cd Past_Papers && npm run build",
+  "outputDirectory": "Past_Papers/build",
+  "functions": {
+    "Past_Papers/api/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/Past_Papers/api/index.js?path=$1" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

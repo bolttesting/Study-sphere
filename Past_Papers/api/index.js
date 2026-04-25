@@ -65,7 +65,20 @@ async function getAuthContext(req, res, supabaseAdmin, supabasePublic, adminOnly
 async function parseBody(req) {
   if (typeof req.body === 'object' && req.body !== null) return req.body;
   if (typeof req.body === 'string') return req.body ? JSON.parse(req.body) : {};
-  return {};
+
+  // Fallback for runtimes where body parsing is disabled/unavailable.
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  const raw = Buffer.concat(chunks).toString('utf8').trim();
+  if (!raw) return {};
+
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return {};
+  }
 }
 
 function parseForm(req) {
